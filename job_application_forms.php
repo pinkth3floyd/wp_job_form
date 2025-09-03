@@ -1,6 +1,6 @@
 <?php
 /*
-Plugin Name: Job Application Form
+Plugin Name: Job Application Form by pinkth3floyd
 Description: A powerful job application form solution for WordPress.
 Version: 1.2
 Author: Prakash Niraula
