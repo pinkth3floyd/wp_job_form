@@ -1,10 +1,10 @@
-=== Job Application Form ===
+=== Job Application Form For Everybody===
 
-Contributors: pinkth3floyd & snngm.sth
+Contributors: pinkth3floyd, snngm.sth
 Tags: job application, form, recruitment, cv, resume
 Requires at least: 5.0
 Tested up to: 6.8
-Stable tag: 1.2
+Stable tag: 1.3
 License: GPLv2 or later
 License URI: https://www.gnu.org/licenses/gpl-2.0.html
 
