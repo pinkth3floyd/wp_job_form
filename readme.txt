@@ -1,6 +1,6 @@
 === Job Application Form ===
 
-Contributors: prakashniraula
+Contributors: pinkth3floyd & snngm.sth
 Tags: job application, form, recruitment, cv, resume
 Requires at least: 5.0
 Tested up to: 6.8

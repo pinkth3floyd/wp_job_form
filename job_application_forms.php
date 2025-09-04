@@ -1,10 +1,10 @@
 <?php
 /*
-Plugin Name: Job Application Form
+Plugin Name: Job Application Form For Everybody
 Description: A powerful job application form solution for WordPress.
-Version: 1.2
-Author: Prakash Niraula
-Author URI: https://prakashniraula.info
+Version: 1.3
+Author: Prakash Niraula & Sangam Shrestha
+Author URI: https://prakashniraula.info/ & https://sangamsth.com.np
 License: GPLv2 or later
 Text Domain: job_form_master
 */
