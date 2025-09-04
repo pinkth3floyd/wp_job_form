@@ -346,16 +346,23 @@ add_action('wp_ajax_handle_job_application_submission', 'handle_job_application_
 add_action('wp_ajax_nopriv_handle_job_application_submission', 'handle_job_application_submission');
 
 /**
+ * Enqueue scripts and styles for the job application form
+ */
+function job_application_enqueue_scripts() {
+    // Enqueue Tailwind CSS CDN for styling
+    wp_enqueue_style('job-form-styles', 'https://cdn.tailwindcss.com', array(), '1.0');
+    
+    // Enqueue the job form script
+    wp_enqueue_script('job-form-script', plugin_dir_url(__FILE__) . 'job-form.js', array('jquery'), '1.0', true);
+    wp_localize_script('job-form-script', 'jobFormAjax', array('ajax_url' => admin_url('admin-ajax.php')));
+}
+add_action('wp_enqueue_scripts', 'job_application_enqueue_scripts');
+
+/**
  * Step 5: Create a shortcode to display the form HTML.
  * This allows the user to place the form anywhere on the site using [job_application_form].
  */
 function job_application_form_shortcode() {
-    // Enqueue scripts and styles
-    wp_enqueue_script('job-form-script', plugin_dir_url(__FILE__) . 'job-form.js', array('jquery'), '1.0', true);
-    wp_localize_script('job-form-script', 'jobFormAjax', array('ajax_url' => admin_url('admin-ajax.php')));
-    // Enqueue Tailwind CSS CDN for styling
-    wp_enqueue_style('job-form-styles', 'https://cdn.tailwindcss.com');
-
     ob_start();
     ?>
     <style>
