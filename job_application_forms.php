@@ -6,7 +6,7 @@ Version: 1.2
 Author: Prakash Niraula
 Author URI: https://prakashniraula.info
 License: GPLv2 or later
-Text Domain: jobformmaster
+Text Domain: job_form_master
 */
 
 // Exit if accessed directly.
@@ -82,7 +82,7 @@ function job_application_submissions_page() {
     $cache_key = 'job_applications_submissions';
     $submissions = wp_cache_get($cache_key);
     if (false === $submissions) {
-        $submissions = $wpdb->get_results( "SELECT * FROM {$table_name} ORDER BY submission_date DESC" );
+        $submissions = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM %i ORDER BY submission_date DESC", $table_name ) );
         wp_cache_set($cache_key, $submissions, '', 300); // Cache for 5 minutes
     }
     ?>
@@ -227,7 +227,8 @@ function handle_job_application_submission() {
     $table_name = $wpdb->prefix . 'job_applications';
 
     // Verify nonce for security
-    if (!isset($_POST['job_application_nonce']) || !wp_verify_nonce(wp_unslash($_POST['job_application_nonce']), 'job_application_form_action')) {
+    $nonce = isset($_POST['job_application_nonce']) ? sanitize_text_field(wp_unslash($_POST['job_application_nonce'])) : '';
+    if (empty($nonce) || !wp_verify_nonce($nonce, 'job_application_form_action')) {
         wp_send_json_error('Security check failed.');
     }
 
@@ -268,7 +269,7 @@ function handle_job_application_submission() {
 
     // Validate and sanitize CV file upload
     if (isset($_FILES['cv_file']) && !empty($_FILES['cv_file']['name'])) {
-        $cv_file = $_FILES['cv_file'];
+        $cv_file = array_map('sanitize_text_field', $_FILES['cv_file']);
         $cv_file_name = sanitize_file_name($cv_file['name']);
         $cv_file_type = wp_check_filetype_and_ext($cv_file['tmp_name'], $cv_file_name);
         $allowed_types = array('pdf', 'doc', 'docx');
@@ -288,7 +289,7 @@ function handle_job_application_submission() {
 
     // Validate and sanitize Cover Letter file upload if present
     if (isset($_FILES['cover_letter_file']) && !empty($_FILES['cover_letter_file']['name'])) {
-        $cover_letter_file = $_FILES['cover_letter_file'];
+        $cover_letter_file = array_map('sanitize_text_field', $_FILES['cover_letter_file']);
         $cover_letter_file_name = sanitize_file_name($cover_letter_file['name']);
         $cover_letter_file_type = wp_check_filetype_and_ext($cover_letter_file['tmp_name'], $cover_letter_file_name);
         $allowed_cover_types = array('pdf', 'doc', 'docx', 'txt');
