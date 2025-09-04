@@ -353,9 +353,8 @@ function job_application_form_shortcode() {
     // Enqueue scripts and styles
     wp_enqueue_script('job-form-script', plugin_dir_url(__FILE__) . 'job-form.js', array('jquery'), '1.0', true);
     wp_localize_script('job-form-script', 'jobFormAjax', array('ajax_url' => admin_url('admin-ajax.php')));
-    // Remove external Tailwind CSS CDN and add local fallback or custom styles
-    // For now, remove the external enqueue to comply with plugin guidelines
-    // wp_enqueue_style('job-form-styles', 'https://cdn.tailwindcss.com');
+    // Enqueue Tailwind CSS CDN for styling
+    wp_enqueue_style('job-form-styles', 'https://cdn.tailwindcss.com');
 
     ob_start();
     ?>
