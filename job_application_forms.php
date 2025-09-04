@@ -351,10 +351,6 @@ add_action('wp_ajax_nopriv_handle_job_application_submission', 'handle_job_appli
 function job_application_enqueue_scripts() {
     // Enqueue Tailwind CSS CDN for styling
     // wp_enqueue_style('job-form-styles', 'https://cdn.tailwindcss.com', array(), '1.0');
-    
-    // Enqueue the job form script
-    wp_enqueue_script('job-form-script', plugin_dir_url(__FILE__) . 'job-form.js', array('jquery'), '1.0', true);
-    wp_localize_script('job-form-script', 'jobFormAjax', array('ajax_url' => admin_url('admin-ajax.php')));
 }
 add_action('wp_enqueue_scripts', 'job_application_enqueue_scripts');
 
@@ -365,6 +361,7 @@ add_action('wp_enqueue_scripts', 'job_application_enqueue_scripts');
 function job_application_form_shortcode() {
     ob_start();
     ?>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
         body {
@@ -382,7 +379,6 @@ function job_application_form_shortcode() {
             to { transform: rotate(360deg); }
         }
     </style>
-     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Increased max-w-4xl to max-w-6xl for wider form as requested -->
     <div class="rounded-xl border bg-card text-card-foreground shadow p-6 max-w-6xl mx-auto">
         <div class="flex flex-col space-y-1.5 pb-6">
@@ -572,80 +568,93 @@ function job_application_form_shortcode() {
         </div>
     </div>
     <script>
-        document.getElementById('jobApplicationForm').addEventListener('submit', async function(event) {
-            event.preventDefault(); // Prevent default form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            const form = document.getElementById('jobApplicationForm');
+            if (!form) return;
 
-            const form = event.target;
-            const statusMessage = document.getElementById('statusMessage');
-            const buttonText = document.getElementById('buttonText');
-            const loadingSpinner = document.getElementById('loadingSpinner');
+            form.addEventListener('submit', async function(event) {
+                event.preventDefault(); // Prevent default form submission
 
-            // Simple client-side validation
-            if (!form.checkValidity()) {
-                statusMessage.textContent = 'Please fill out all required fields.';
-                statusMessage.className = 'block text-sm font-medium text-red-500 text-center';
-                return;
-            }
+                const statusMessage = document.getElementById('statusMessage');
+                const buttonText = document.getElementById('buttonText');
+                const loadingSpinner = document.getElementById('loadingSpinner');
 
-            // Show loading state
-            buttonText.textContent = 'Submitting...';
-            loadingSpinner.classList.remove('hidden');
-            form.querySelector('button[type="submit"]').disabled = true;
+                // Simple client-side validation
+                if (!form.checkValidity()) {
+                    statusMessage.textContent = 'Please fill out all required fields.';
+                    statusMessage.className = 'block text-sm font-medium text-red-500 text-center';
+                    return;
+                }
 
-            const formData = new FormData(form);
-            formData.append('action', 'handle_job_application_submission');
+                // Show loading state
+                buttonText.textContent = 'Submitting...';
+                loadingSpinner.classList.remove('hidden');
+                form.querySelector('button[type="submit"]').disabled = true;
 
-            try {
-                const response = await fetch('<?php echo esc_url( admin_url('admin-ajax.php') ); ?>', {
-                    method: 'POST',
-                    body: formData,
-                });
+                const formData = new FormData(form);
+                formData.append('action', 'handle_job_application_submission');
 
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success) {
-                        statusMessage.textContent = result.data;
-                        statusMessage.className = 'block text-sm font-medium text-green-500 text-center';
-                        form.reset(); // Reset form fields on success
-                        document.getElementById('cv_file_name').textContent = '';
-                        document.getElementById('cover_letter_file_name').textContent = '';
+                try {
+                    const response = await fetch('<?php echo esc_url( admin_url('admin-ajax.php') ); ?>', {
+                        method: 'POST',
+                        body: formData,
+                    });
+
+                    if (response.ok) {
+                        const result = await response.json();
+                        if (result.success) {
+                            statusMessage.textContent = result.data;
+                            statusMessage.className = 'block text-sm font-medium text-green-500 text-center';
+                            form.reset(); // Reset form fields on success
+                            document.getElementById('cv_file_name').textContent = '';
+                            document.getElementById('cover_letter_file_name').textContent = '';
+                        } else {
+                            statusMessage.textContent = result.data;
+                            statusMessage.className = 'block text-sm font-medium text-red-500 text-center';
+                        }
                     } else {
-                        statusMessage.textContent = result.data;
+                        statusMessage.textContent = 'An unexpected error occurred. Please try again later.';
                         statusMessage.className = 'block text-sm font-medium text-red-500 text-center';
                     }
-                } else {
+                } catch (error) {
                     statusMessage.textContent = 'An unexpected error occurred. Please try again later.';
                     statusMessage.className = 'block text-sm font-medium text-red-500 text-center';
+                } finally {
+                    buttonText.textContent = 'Submit Application';
+                    loadingSpinner.classList.add('hidden');
+                    form.querySelector('button[type="submit"]').disabled = false;
                 }
-            } catch (error) {
-                statusMessage.textContent = 'An unexpected error occurred. Please try again later.';
-                statusMessage.className = 'block text-sm font-medium text-red-500 text-center';
-            } finally {
-                buttonText.textContent = 'Submit Application';
-                loadingSpinner.classList.add('hidden');
-                form.querySelector('button[type="submit"]').disabled = false;
+            });
+
+            // Add event listener to the Cancel button
+            const cancelButton = document.getElementById('cancelButton');
+            if (cancelButton) {
+                cancelButton.addEventListener('click', function() {
+                    form.reset();
+                    const statusMessage = document.getElementById('statusMessage');
+                    statusMessage.textContent = '';
+                    statusMessage.classList.add('hidden');
+                    document.getElementById('cv_file_name').textContent = '';
+                    document.getElementById('cover_letter_file_name').textContent = '';
+                });
             }
-        });
 
-        // Add event listener to the Cancel button
-        document.getElementById('cancelButton').addEventListener('click', function() {
-            document.getElementById('jobApplicationForm').reset();
-            const statusMessage = document.getElementById('statusMessage');
-            statusMessage.textContent = '';
-            statusMessage.classList.add('hidden');
-            document.getElementById('cv_file_name').textContent = '';
-            document.getElementById('cover_letter_file_name').textContent = '';
-        });
+            // Add event listeners for file inputs to display the selected file name
+            const cvFile = document.getElementById('cv_file');
+            if (cvFile) {
+                cvFile.addEventListener('change', function(event) {
+                    const fileName = event.target.files.length > 0 ? event.target.files[0].name : '';
+                    document.getElementById('cv_file_name').textContent = fileName;
+                });
+            }
 
-        // Add event listeners for file inputs to display the selected file name
-        document.getElementById('cv_file').addEventListener('change', function(event) {
-            const fileName = event.target.files.length > 0 ? event.target.files[0].name : '';
-            document.getElementById('cv_file_name').textContent = fileName;
-        });
-
-        document.getElementById('cover_letter_file').addEventListener('change', function(event) {
-            const fileName = event.target.files.length > 0 ? event.target.files[0].name : '';
-            document.getElementById('cover_letter_file_name').textContent = fileName;
+            const coverLetterFile = document.getElementById('cover_letter_file');
+            if (coverLetterFile) {
+                coverLetterFile.addEventListener('change', function(event) {
+                    const fileName = event.target.files.length > 0 ? event.target.files[0].name : '';
+                    document.getElementById('cover_letter_file_name').textContent = fileName;
+                });
+            }
         });
     </script>
     <?php
