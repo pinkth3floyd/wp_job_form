@@ -350,7 +350,7 @@ add_action('wp_ajax_nopriv_handle_job_application_submission', 'handle_job_appli
  */
 function job_application_enqueue_scripts() {
     // Enqueue Tailwind CSS CDN for styling
-    wp_enqueue_style('job-form-styles', 'https://cdn.tailwindcss.com', array(), '1.0');
+    // wp_enqueue_style('job-form-styles', 'https://cdn.tailwindcss.com', array(), '1.0');
     
     // Enqueue the job form script
     wp_enqueue_script('job-form-script', plugin_dir_url(__FILE__) . 'job-form.js', array('jquery'), '1.0', true);
@@ -382,6 +382,7 @@ function job_application_form_shortcode() {
             to { transform: rotate(360deg); }
         }
     </style>
+     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Increased max-w-4xl to max-w-6xl for wider form as requested -->
     <div class="rounded-xl border bg-card text-card-foreground shadow p-6 max-w-6xl mx-auto">
         <div class="flex flex-col space-y-1.5 pb-6">
