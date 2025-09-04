@@ -1,12 +1,12 @@
 <?php
 /*
-Plugin Name: Job Application Form by pinkth3floyd
+Plugin Name: Job Application Form
 Description: A powerful job application form solution for WordPress.
 Version: 1.2
 Author: Prakash Niraula
 Author URI: https://prakashniraula.info
 License: GPLv2 or later
-Text Domain: job-application-form
+Text Domain: jobformmaster
 */
 
 // Exit if accessed directly.
@@ -79,7 +79,12 @@ add_action('admin_menu', 'job_application_admin_menu');
 function job_application_submissions_page() {
     global $wpdb;
     $table_name = $wpdb->prefix . 'job_applications';
-    $submissions = $wpdb->get_results("SELECT * FROM $table_name ORDER BY submission_date DESC");
+    $cache_key = 'job_applications_submissions';
+    $submissions = wp_cache_get($cache_key);
+    if (false === $submissions) {
+        $submissions = $wpdb->get_results( "SELECT * FROM {$table_name} ORDER BY submission_date DESC" );
+        wp_cache_set($cache_key, $submissions, '', 300); // Cache for 5 minutes
+    }
     ?>
     <div class="wrap">
         <h1 class="wp-heading-inline">Job Applications</h1>
@@ -154,9 +159,9 @@ function job_application_submissions_page() {
                         const data = new FormData();
                         data.append('action', 'handle_job_application_deletion');
                         data.append('application_id', applicationId);
-                        data.append('security', '<?php echo wp_create_nonce('delete_job_application_nonce'); ?>');
+                        data.append('security', '<?php echo esc_attr( wp_create_nonce('delete_job_application_nonce') ); ?>');
 
-                        fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                        fetch('<?php echo esc_url( admin_url('admin-ajax.php') ); ?>', {
                             method: 'POST',
                             body: data,
                         })
@@ -188,17 +193,19 @@ function handle_job_application_deletion() {
     global $wpdb;
     $table_name = $wpdb->prefix . 'job_applications';
 
-    // Verify nonce for security
-    if (!isset($_POST['security']) || !wp_verify_nonce($_POST['security'], 'delete_job_application_nonce')) {
+    // Sanitize and verify nonce for security
+    $security = isset($_POST['security']) ? sanitize_text_field(wp_unslash($_POST['security'])) : '';
+    if (empty($security) || !wp_verify_nonce($security, 'delete_job_application_nonce')) {
         wp_send_json_error('Security check failed.');
     }
 
-    $application_id = isset($_POST['application_id']) ? intval($_POST['application_id']) : 0;
+    $application_id = isset($_POST['application_id']) ? intval(wp_unslash($_POST['application_id'])) : 0;
 
     if ($application_id > 0) {
         $deleted = $wpdb->delete($table_name, array('id' => $application_id), array('%d'));
 
         if ($deleted) {
+            wp_cache_delete('job_applications_submissions'); // Clear cache after deletion
             wp_send_json_success('Application deleted successfully.');
         } else {
             wp_send_json_error('Error deleting application. Application may not exist or database error.');
@@ -220,29 +227,29 @@ function handle_job_application_submission() {
     $table_name = $wpdb->prefix . 'job_applications';
 
     // Verify nonce for security
-    // if (!isset($_POST['job_application_nonce']) || !wp_verify_nonce($_POST['job_application_nonce'], 'job_application_form_action')) {
-    //     wp_send_json_error('Security check failed.');
-    // }
+    if (!isset($_POST['job_application_nonce']) || !wp_verify_nonce(wp_unslash($_POST['job_application_nonce']), 'job_application_form_action')) {
+        wp_send_json_error('Security check failed.');
+    }
 
     // Sanitize and validate data
-    $first_name = isset($_POST['first_name']) ? sanitize_text_field($_POST['first_name']) : '';
-    $last_name = isset($_POST['last_name']) ? sanitize_text_field($_POST['last_name']) : '';
-    $email = isset($_POST['email']) ? sanitize_email($_POST['email']) : '';
-    $phone = isset($_POST['phone']) ? sanitize_text_field($_POST['phone']) : '';
-    $address = isset($_POST['address']) ? sanitize_text_field($_POST['address']) : '';
-    $city = isset($_POST['city']) ? sanitize_text_field($_POST['city']) : '';
-    $state = isset($_POST['state']) ? sanitize_text_field($_POST['state']) : '';
-    $postcode = isset($_POST['postcode']) ? sanitize_text_field($_POST['postcode']) : '';
-    $date_of_birth = isset($_POST['date_of_birth']) ? sanitize_text_field($_POST['date_of_birth']) : '';
-    $nationality = isset($_POST['nationality']) ? sanitize_text_field($_POST['nationality']) : '';
-    $current_company = isset($_POST['current_company']) ? sanitize_text_field($_POST['current_company']) : '';
-    $current_position = isset($_POST['current_position']) ? sanitize_text_field($_POST['current_position']) : '';
-    $years_of_experience = isset($_POST['years_of_experience']) ? intval($_POST['years_of_experience']) : 0;
-    $education_level = isset($_POST['education_level']) ? sanitize_text_field($_POST['education_level']) : '';
-    $expected_salary = isset($_POST['expected_salary']) ? sanitize_text_field($_POST['expected_salary']) : '';
-    $availability = isset($_POST['availability']) ? sanitize_text_field($_POST['availability']) : '';
-    $cover_letter_text = isset($_POST['cover_letter']) ? sanitize_textarea_field($_POST['cover_letter']) : '';
-    $additional_notes = isset($_POST['notes']) ? sanitize_textarea_field($_POST['notes']) : '';
+    $first_name = isset($_POST['first_name']) ? sanitize_text_field(wp_unslash($_POST['first_name'])) : '';
+    $last_name = isset($_POST['last_name']) ? sanitize_text_field(wp_unslash($_POST['last_name'])) : '';
+    $email = isset($_POST['email']) ? sanitize_email(wp_unslash($_POST['email'])) : '';
+    $phone = isset($_POST['phone']) ? sanitize_text_field(wp_unslash($_POST['phone'])) : '';
+    $address = isset($_POST['address']) ? sanitize_text_field(wp_unslash($_POST['address'])) : '';
+    $city = isset($_POST['city']) ? sanitize_text_field(wp_unslash($_POST['city'])) : '';
+    $state = isset($_POST['state']) ? sanitize_text_field(wp_unslash($_POST['state'])) : '';
+    $postcode = isset($_POST['postcode']) ? sanitize_text_field(wp_unslash($_POST['postcode'])) : '';
+    $date_of_birth = isset($_POST['date_of_birth']) ? sanitize_text_field(wp_unslash($_POST['date_of_birth'])) : '';
+    $nationality = isset($_POST['nationality']) ? sanitize_text_field(wp_unslash($_POST['nationality'])) : '';
+    $current_company = isset($_POST['current_company']) ? sanitize_text_field(wp_unslash($_POST['current_company'])) : '';
+    $current_position = isset($_POST['current_position']) ? sanitize_text_field(wp_unslash($_POST['current_position'])) : '';
+    $years_of_experience = isset($_POST['years_of_experience']) ? intval(wp_unslash($_POST['years_of_experience'])) : 0;
+    $education_level = isset($_POST['education_level']) ? sanitize_text_field(wp_unslash($_POST['education_level'])) : '';
+    $expected_salary = isset($_POST['expected_salary']) ? sanitize_text_field(wp_unslash($_POST['expected_salary'])) : '';
+    $availability = isset($_POST['availability']) ? sanitize_text_field(wp_unslash($_POST['availability'])) : '';
+    $cover_letter_text = isset($_POST['cover_letter']) ? sanitize_textarea_field(wp_unslash($_POST['cover_letter'])) : '';
+    $additional_notes = isset($_POST['notes']) ? sanitize_textarea_field(wp_unslash($_POST['notes'])) : '';
 
     if (empty($first_name) || empty($last_name) || empty($email) || empty($_FILES['cv_file'])) {
         wp_send_json_error('Please fill out all required fields.');
@@ -259,19 +266,36 @@ function handle_job_application_submission() {
 
     $upload_overrides = array('test_form' => false);
 
-    // Handle CV file upload
-    $cv_file = $_FILES['cv_file'];
-    $cv_uploaded_file = wp_handle_upload($cv_file, $upload_overrides);
-
-    if (isset($cv_uploaded_file['url'])) {
-        $cv_file_url = $cv_uploaded_file['url'];
+    // Validate and sanitize CV file upload
+    if (isset($_FILES['cv_file']) && !empty($_FILES['cv_file']['name'])) {
+        $cv_file = $_FILES['cv_file'];
+        $cv_file_name = sanitize_file_name($cv_file['name']);
+        $cv_file_type = wp_check_filetype_and_ext($cv_file['tmp_name'], $cv_file_name);
+        $allowed_types = array('pdf', 'doc', 'docx');
+        if (!in_array($cv_file_type['ext'], $allowed_types)) {
+            wp_send_json_error('Invalid CV file type. Allowed types: PDF, DOC, DOCX.');
+        }
+        $cv_file['name'] = $cv_file_name;
+        $cv_uploaded_file = wp_handle_upload($cv_file, $upload_overrides);
+        if (isset($cv_uploaded_file['url'])) {
+            $cv_file_url = $cv_uploaded_file['url'];
+        } else {
+            wp_send_json_error('CV file upload failed: ' . $cv_uploaded_file['error']);
+        }
     } else {
-        wp_send_json_error('CV file upload failed: ' . $cv_uploaded_file['error']);
+        wp_send_json_error('CV file is required.');
     }
 
-    // Handle Cover Letter file upload if present
+    // Validate and sanitize Cover Letter file upload if present
     if (isset($_FILES['cover_letter_file']) && !empty($_FILES['cover_letter_file']['name'])) {
         $cover_letter_file = $_FILES['cover_letter_file'];
+        $cover_letter_file_name = sanitize_file_name($cover_letter_file['name']);
+        $cover_letter_file_type = wp_check_filetype_and_ext($cover_letter_file['tmp_name'], $cover_letter_file_name);
+        $allowed_cover_types = array('pdf', 'doc', 'docx', 'txt');
+        if (!in_array($cover_letter_file_type['ext'], $allowed_cover_types)) {
+            wp_send_json_error('Invalid Cover Letter file type. Allowed types: PDF, DOC, DOCX, TXT.');
+        }
+        $cover_letter_file['name'] = $cover_letter_file_name;
         $cover_letter_uploaded_file = wp_handle_upload($cover_letter_file, $upload_overrides);
         if (isset($cover_letter_uploaded_file['url'])) {
             $cover_letter_file_url = $cover_letter_uploaded_file['url'];
@@ -281,7 +305,7 @@ function handle_job_application_submission() {
     }
 
     // Insert data into the database
-    $wpdb->insert(
+    $inserted = $wpdb->insert(
         $table_name,
         array(
             'first_name' => $first_name,
@@ -310,6 +334,7 @@ function handle_job_application_submission() {
     if ($wpdb->last_error) {
         wp_send_json_error('Database error: ' . $wpdb->last_error);
     } else {
+        wp_cache_delete('job_applications_submissions'); // Clear cache after insertion
         wp_send_json_success('Your application has been submitted successfully!');
     }
 
@@ -324,6 +349,13 @@ add_action('wp_ajax_nopriv_handle_job_application_submission', 'handle_job_appli
  * This allows the user to place the form anywhere on the site using [job_application_form].
  */
 function job_application_form_shortcode() {
+    // Enqueue scripts and styles
+    wp_enqueue_script('job-form-script', plugin_dir_url(__FILE__) . 'job-form.js', array('jquery'), '1.0', true);
+    wp_localize_script('job-form-script', 'jobFormAjax', array('ajax_url' => admin_url('admin-ajax.php')));
+    // Remove external Tailwind CSS CDN and add local fallback or custom styles
+    // For now, remove the external enqueue to comply with plugin guidelines
+    // wp_enqueue_style('job-form-styles', 'https://cdn.tailwindcss.com');
+
     ob_start();
     ?>
     <style>
@@ -343,8 +375,6 @@ function job_application_form_shortcode() {
             to { transform: rotate(360deg); }
         }
     </style>
-    <!-- Add the Tailwind CDN script to load the framework. -->
-    <script src="https://cdn.tailwindcss.com"></script>
     <!-- Increased max-w-4xl to max-w-6xl for wider form as requested -->
     <div class="rounded-xl border bg-card text-card-foreground shadow p-6 max-w-6xl mx-auto">
         <div class="flex flex-col space-y-1.5 pb-6">
@@ -354,6 +384,7 @@ function job_application_form_shortcode() {
         </div>
         <div class="p-6 pt-0">
             <form id="jobApplicationForm" class="space-y-6" enctype="multipart/form-data">
+                <input type="hidden" name="job_application_nonce" value="<?php echo esc_attr( wp_create_nonce('job_application_form_action') ); ?>" />
                 <div class="space-y-4">
                     <!-- Increased font size for section heading to 18px -->
                     <h3 class="text-lg font-semibold text-gray-900 border-b pb-2">Personal Information</h3>
@@ -557,7 +588,7 @@ function job_application_form_shortcode() {
             formData.append('action', 'handle_job_application_submission');
 
             try {
-                const response = await fetch('<?php echo admin_url('admin-ajax.php'); ?>', {
+                const response = await fetch('<?php echo esc_url( admin_url('admin-ajax.php') ); ?>', {
                     method: 'POST',
                     body: formData,
                 });
