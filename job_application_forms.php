@@ -82,7 +82,7 @@ function job_application_submissions_page() {
     $cache_key = 'job_applications_submissions';
     $submissions = wp_cache_get($cache_key);
     if (false === $submissions) {
-        $submissions = $wpdb->get_results( $wpdb->prepare( "SELECT * FROM {$table_name} ORDER BY submission_date DESC" ) );
+        $submissions = $wpdb->get_results( "SELECT * FROM `" . $wpdb->prefix . "job_applications` ORDER BY submission_date DESC" );
         wp_cache_set($cache_key, $submissions, '', 300); // Cache for 5 minutes
     }
     ?>
